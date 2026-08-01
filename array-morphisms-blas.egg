@@ -1,0 +1,29 @@
+;;;; -*- Hen -*-
+
+(
+ ; Your egg's license:
+ (license "LGPL-3")
+
+ ; Egg category
+ (category data)
+
+ ; A list of eggs array-morphisms-blas depends on.
+ ; 'blas' is the system-BLAS binding egg; keeping this dependency in a
+ ; separate egg (rather than in array-morphisms.egg) means users who only
+ ; want the dependency-free microBLAS backend never need a system BLAS
+ ; library installed at all.
+ (dependencies srfi-4 blas array-morphisms)
+
+ (author "Ivan Raikov")
+
+ (synopsis "System-BLAS-based backend for array-morphisms.")
+
+ (components (c-object im2col-kernels (source "kernels/im2col.c") (csc-options "-O3"))
+             (extension array-morphisms-blas-egg-backend
+                        (source "chicken-blas-backend.scm")
+                        (csc-options "-O2" "-d1")
+                        (objects im2col-kernels)))
+
+ (test-dependencies test array-morphisms)
+
+)
