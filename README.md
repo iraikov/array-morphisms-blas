@@ -3,12 +3,9 @@
 System-BLAS-backed `blas-backend` adapter for
 [array-morphisms](https://github.com/iraikov/array-morphisms).
 
-This egg exists separately from the core `array-morphisms` egg because CHICKEN's egg system
-has no way to make a component's dependency on the `blas` egg conditional: listing `blas` in
-`array-morphisms.egg` would force every `array-morphisms` user to install the `blas` egg (and a
-system BLAS library) even if they only want the dependency-free `microBLAS` default backend that
-ships with the core egg. Install `array-morphisms-blas` only when you want system-BLAS
-acceleration (OpenBLAS, MKL, etc., via the CHICKEN `blas` egg).
+This egg exists separately from the core `array-morphisms` in order to avoid introducing a dependency on blas.
+`array-morphisms` provides a default backend based on the `microBLAS` header-only library.
+Install `array-morphisms-blas` only when you want system-BLAS acceleration (OpenBLAS, MKL, etc., via the CHICKEN `blas` egg).
 
 ## Installation
 
@@ -20,10 +17,6 @@ Requires the [`blas`](https://wiki.call-cc.org/eggref/5/blas) egg and a system B
 (e.g. OpenBLAS) to already be resolvable/installed.
 
 ## Which BLAS implementation actually gets used (Debian/Ubuntu)
-
-> **Provisional note**, written after investigating why this egg's performance changed once
-> OpenBLAS packages were installed on a Debian-derived dev machine. Worth re-checking on other
-> distros/setups.
 
 The CHICKEN `blas` egg's build script does not choose a specific BLAS implementation itself; its
 `build.scm` just probes a fixed list of generic candidates (`<cblas.h>` + `-lblas -lm` first,
@@ -47,12 +40,6 @@ Both alternative groups default to "auto" mode, so the highest-priority option (
 is selected automatically the moment the corresponding packages are installed.
 If OpenBLAS is installed on the machine, both the plain `blas` egg and this egg
 already link against and run on OpenBLAS.
-
-Verified directly:
-- `ldd` on the built `.so` shows `libblas.so.3 → libopenblas.so.0`.
-- `nm -D libblas.so.3 | grep cblas_ddot` finds the symbol (the reference implementation alone
-  would not export a CBLAS interface).
-- Benchmarked: a 2048×2048 `sgemm` goes from ~105 GFLOP/s (1 thread) to ~310 GFLOP/s (4 threads).
 
 To check or change which implementation is active:
 
@@ -89,10 +76,6 @@ to be set for multi-threaded execution to happen at all. The environment variabl
 ```bash
 OPENBLAS_NUM_THREADS=4 csi -s your-script.scm
 ```
-
-Worth setting explicitly when running multiple BLAS-heavy processes concurrently on the same
-machine (so they don't collectively oversubscribe the CPU), or when you want a fixed, reproducible
-thread count for benchmarking rather than "whatever this machine's core count happens to be."
 
 ## What it provides
 
