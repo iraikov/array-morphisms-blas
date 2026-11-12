@@ -22,6 +22,7 @@
              (extension array-morphisms-blas-egg-backend
                         (source "chicken-blas-backend.scm")
                         (csc-options "-O2" "-d1")
+                        (link-options "-L" "-lblas")
                         (objects im2col-kernels)))
 
  (test-dependencies test array-morphisms)

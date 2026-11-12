@@ -124,6 +124,44 @@
             #:lda lda-A #:ldb ldb-B #:ldc N))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;; Offset GEMM kernels
+  ;;; Normalized signature:
+  ;;;   (M N K alpha data-A off-A lda-A transa data-B off-B ldb-B transb
+  ;;;    beta data-C off-C) -> void
+  ;;; The strided kernels above, on matrices that start at element offsets
+  ;;; into their vectors.  They call the CBLAS routine the egg's sgemm! and
+  ;;; dgemm! call, with the same arguments apart from the start addresses.
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (foreign-declare "#include <cblas.h>")
+
+  (define %c-sgemm-offset
+    (foreign-lambda* void ((int M) (int N) (int K) (float alpha)
+                           (f32vector A) (int offa) (int lda) (bool ta)
+                           (f32vector B) (int offb) (int ldb) (bool tb)
+                           (float beta) (f32vector C) (int offc))
+      "cblas_sgemm(CblasRowMajor, ta ? CblasTrans : CblasNoTrans, tb ? CblasTrans : CblasNoTrans,
+                   M, N, K, alpha, A + offa, lda, B + offb, ldb, beta, C + offc, N);"))
+
+  (define %c-dgemm-offset
+    (foreign-lambda* void ((int M) (int N) (int K) (double alpha)
+                           (f64vector A) (int offa) (int lda) (bool ta)
+                           (f64vector B) (int offb) (int ldb) (bool tb)
+                           (double beta) (f64vector C) (int offc))
+      "cblas_dgemm(CblasRowMajor, ta ? CblasTrans : CblasNoTrans, tb ? CblasTrans : CblasNoTrans,
+                   M, N, K, alpha, A + offa, lda, B + offb, ldb, beta, C + offc, N);"))
+
+  (define (%egg-sgemm-offset M N K alpha data-A off-A lda-A transa data-B off-B ldb-B transb
+                             beta data-C off-C)
+    (%c-sgemm-offset M N K alpha data-A off-A lda-A (eq? transa 'trans)
+                     data-B off-B ldb-B (eq? transb 'trans) beta data-C off-C))
+
+  (define (%egg-dgemm-offset M N K alpha data-A off-A lda-A transa data-B off-B ldb-B transb
+                             beta data-C off-C)
+    (%c-dgemm-offset M N K alpha data-A off-A lda-A (eq? transa 'trans)
+                     data-B off-B ldb-B (eq? transb 'trans) beta data-C off-C))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;; GEMV kernels
   ;;; Normalized signature: (M N alpha data-A data-x beta data-y) -> void
   ;;; data-y is mutated in-place.
@@ -232,7 +270,7 @@
   (define (make-blas-egg-backend)
     "Construct a blas-backend record that wraps the Chicken 'blas' egg.
 
-    All eight kernel slots are populated; both f64 and f32 variants are
+    All eight kernel slots and the two offset GEMM kernels are populated; both f64 and f32 variants are
     provided via the egg's d* and s* routines respectively.  The conv-*
     hot-kernel slots (NCHW and NHWC) are also populated, backed by the
     vendored C kernels in kernels/im2col.c.
@@ -252,6 +290,7 @@
      %egg-conv-bwd-weights-im2col-f32
      %egg-conv-fwd-nhwc-im2col-f32
      %egg-conv-bwd-data-nhwc-im2col-f32
-     %egg-conv-bwd-weights-nhwc-im2col-f32))
+     %egg-conv-bwd-weights-nhwc-im2col-f32
+     %egg-dgemm-offset   %egg-sgemm-offset))  ; gemm-offset-f64   gemm-offset-f32
 
 ) ;; end module array-morphisms-blas-egg-backend
