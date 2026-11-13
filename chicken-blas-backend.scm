@@ -161,6 +161,17 @@
     (%c-dgemm-offset M N K alpha data-A off-A lda-A (eq? transa 'trans)
                      data-B off-B ldb-B (eq? transb 'trans) beta data-C off-C))
 
+  ;; DOT of vectors that start at element offsets: (N data-x off-x data-y
+  ;; off-y) -> number, through the CBLAS routine the egg's sdot and ddot
+  ;; call, with unit increments.
+  (define %egg-sdot-offset
+    (foreign-lambda* float ((int N) (f32vector x) (int offx) (f32vector y) (int offy))
+      "C_return(cblas_sdot(N, x + offx, 1, y + offy, 1));"))
+
+  (define %egg-ddot-offset
+    (foreign-lambda* double ((int N) (f64vector x) (int offx) (f64vector y) (int offy))
+      "C_return(cblas_ddot(N, x + offx, 1, y + offy, 1));"))
+
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;; GEMV kernels
   ;;; Normalized signature: (M N alpha data-A data-x beta data-y) -> void
@@ -270,7 +281,7 @@
   (define (make-blas-egg-backend)
     "Construct a blas-backend record that wraps the Chicken 'blas' egg.
 
-    All eight kernel slots and the two offset GEMM kernels are populated; both f64 and f32 variants are
+    All eight kernel slots and the offset GEMM and DOT kernels are populated; both f64 and f32 variants are
     provided via the egg's d* and s* routines respectively.  The conv-*
     hot-kernel slots (NCHW and NHWC) are also populated, backed by the
     vendored C kernels in kernels/im2col.c.
@@ -291,6 +302,7 @@
      %egg-conv-fwd-nhwc-im2col-f32
      %egg-conv-bwd-data-nhwc-im2col-f32
      %egg-conv-bwd-weights-nhwc-im2col-f32
-     %egg-dgemm-offset   %egg-sgemm-offset))  ; gemm-offset-f64   gemm-offset-f32
+     %egg-dgemm-offset   %egg-sgemm-offset    ; gemm-offset-f64   gemm-offset-f32
+     %egg-ddot-offset    %egg-sdot-offset))   ; dot-offset-f64    dot-offset-f32
 
 ) ;; end module array-morphisms-blas-egg-backend

@@ -84,6 +84,12 @@ that routes gemm/gemv/dot/axpy through the `blas` egg's `dgemm!`/`sgemm!`/etc., 
 provides fused im2col+gemm+bias "hot kernel" hooks (both NCHW and NHWC layouts) for
 `array-morphisms`'s conv2d forward/backward paths, backed by the C kernels in `kernels/im2col.c`.
 
+It also provides the optional offset kernels of the backend record: GEMM and DOT on matrices
+and vectors that start at an offset into their vectors. They call `cblas_sgemm`/`cblas_dgemm`
+and `cblas_sdot`/`cblas_ddot` directly, with the same arguments as `sgemm!` and `sdot`
+apart from the start addresses, so their results are the same. array-morphisms uses them to run
+the cells of a batched product and the rows of a framed sum in place.
+
 ## License
 
 LGPL-3, the same as `array-morphisms`.
