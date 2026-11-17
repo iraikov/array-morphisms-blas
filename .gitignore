@@ -5,3 +5,13 @@
 *.scm~
 *.scm#*
 .#*.scm
+*~
+
+# Build artifacts
+*.import.scm
+*.build.sh
+*.install.sh
+*.link
+*.a
+*.o
+*.so
