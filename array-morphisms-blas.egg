@@ -4,6 +4,8 @@
  ; Your egg's license:
  (license "LGPL-3")
 
+ (version "1.1")
+
  ; Egg category
  (category data)
 
@@ -12,7 +14,7 @@
  ; separate egg (rather than in array-morphisms.egg) means users who only
  ; want the dependency-free microBLAS backend never need a system BLAS
  ; library installed at all.
- (dependencies srfi-4 blas array-morphisms)
+ (dependencies srfi-4 blas (array-morphisms "3.0"))
 
  (author "Ivan Raikov")
 
@@ -25,6 +27,6 @@
                         (link-options "-L" "-lblas")
                         (objects im2col-kernels)))
 
- (test-dependencies test array-morphisms)
+ (test-dependencies test (array-morphisms "3.0"))
 
 )
